@@ -2,19 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>More Discord Notes Settings</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    button { margin: 10px 0; padding: 8px 12px; font-size: 16px; }
-  </style>
-</head>
-<body>
-  <h1>More Discord Notes Settings</h1>
-  <button type="button" id="export">Export Notes</button><br>
-  <button type="button" id="import">Import Notes</button>
-  <input type="file" id="file" style="display:none" accept="application/json">
-  <p id="status"></p>
-
-  <script src="options.js"></script>
-</body>
+  <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main class="container">
+      <h1>More Discord Notes Settings</h1>
+      <section class="card">
+        <h2 class="section-title" id="import-export">Import &amp; Export</h2>
+        <div class="actions">
+          <button type="button" id="export" class="btn">Export Notes</button>
+          <button type="button" id="import" class="btn">Import Notes</button>
+          <input type="file" id="file" class="file-input" accept="application/json">
+        </div>
+        <p id="status" class="status"></p>
+      </section>
+    </main>
+    <script src="options.js"></script>
+  </body>
 </html>

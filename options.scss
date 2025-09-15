@@ -1,0 +1,82 @@
+// Dark theme variables
+$bg: #0f1115;
+$surface: #151922;
+$surface-2: #1c2230;
+$border: #2a3342;
+$border-strong: #3a465a;
+$fg: #e6e8ee;
+$muted: #a5adba;
+$accent: #5865f2; // subtle discord accent for focus only
+$radius: 8px;
+$gap: 12px;
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background: $bg;
+  color: $fg;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+  max-width: 720px;
+  padding: 24px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: $muted;
+  margin: 0 0 12px;
+}
+
+.card {
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: $radius;
+  padding: 16px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $gap;
+  align-items: center;
+}
+
+.btn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid $border;
+  background: $surface-2;
+  color: $fg;
+  padding: 10px 14px;
+  font-size: 14px;
+  border-radius: $radius;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .02s ease;
+  user-select: none;
+  &:hover { background: $surface; border-color: $border-strong; }
+  &:active { transform: translateY(1px); }
+  &:focus-visible { outline: 2px solid $accent; outline-offset: 2px; }
+}
+
+.file-input { display: none; }
+
+.status {
+  margin-top: 12px;
+  color: $muted;
+  min-height: 1em;
+  white-space: pre-wrap;
+}
