@@ -3,6 +3,48 @@ function log(...args) {
     console.log("[MORE NOTES]", ...args);
 }
 
+// === Extension API wrapper (chrome/browser + promise)
+const EXT = (() => {
+    const runtime =
+        typeof chrome !== "undefined" && chrome?.runtime
+            ? chrome.runtime
+            : typeof browser !== "undefined" && browser?.runtime
+            ? browser.runtime
+            : null;
+
+    const has = !!runtime;
+    const sendMessage = (msg) =>
+        new Promise((resolve, reject) => {
+            if (!runtime?.sendMessage) return reject(new Error("extension runtime not available"));
+            try {
+                runtime.sendMessage(msg, (response) => {
+                    const lastErr =
+                        typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError
+                            ? chrome.runtime.lastError
+                            : typeof browser !== "undefined" &&
+                              browser.runtime &&
+                              browser.runtime.lastError
+                            ? browser.runtime.lastError
+                            : null;
+                    if (lastErr) return reject(lastErr);
+                    resolve(response);
+                });
+            } catch (e) {
+                reject(e);
+            }
+        });
+
+    const getManifest = () => {
+        try {
+            return runtime?.getManifest ? runtime.getManifest() : null;
+        } catch {
+            return null;
+        }
+    };
+
+    return { has, sendMessage, getManifest };
+})();
+
 // === Wait for an element to appear
 function waitForElement(selector, root = document) {
     return new Promise((resolve) => {
@@ -148,7 +190,7 @@ function liftDiscordNoteLimit(textarea) {
     const stopDiscord = (e) => {
         e.stopPropagation();
     };
-    const events = ["beforeinput", "input", "keydown", "keypress", "paste"];
+    const events = ["beforeinput", "keydown", "keypress", "paste", "drop"];
     for (const type of events) {
         textarea.addEventListener(type, stopDiscord, true);
     }
@@ -179,7 +221,7 @@ function setupNoteIcons() {
             const userId = extractUserId(panel);
             if (!userId) continue;
 
-            const note = await chrome.runtime.sendMessage({ cmd: "get", id: userId });
+            const note = EXT.has ? await EXT.sendMessage({ cmd: "get", id: userId }) : null;
             if (!note?.trim()) continue;
 
             log("↪ Enhancing icon for user", userId);
@@ -225,7 +267,7 @@ function overrideDiscordTooltips() {
                 const userId = extractUserId(panel);
                 if (!userId) continue;
 
-                const note = await chrome.runtime.sendMessage({ cmd: "get", id: userId });
+                const note = EXT.has ? await EXT.sendMessage({ cmd: "get", id: userId }) : null;
                 if (!note?.trim()) return;
 
                 log("Replacing tooltip content with local note:", note);
@@ -305,15 +347,17 @@ function overrideDiscordTooltips() {
             if (!userId) continue;
 
             const discordNote = textarea.value.trim();
-            if (discordNote) {
+            if (discordNote && EXT.has) {
                 log("Saving existing Discord note to local:", discordNote);
-                await chrome.runtime.sendMessage({ cmd: "set", id: userId, text: discordNote });
+                await EXT.sendMessage({ cmd: "set", id: userId, text: discordNote });
             }
 
-            const storedNote = await chrome.runtime.sendMessage({ cmd: "get", id: userId });
+            const storedNote = EXT.has ? await EXT.sendMessage({ cmd: "get", id: userId }) : null;
             log("Injecting local note:", storedNote);
-            textarea.value = storedNote || "";
-            textarea.dispatchEvent(new Event("input", { bubbles: true }));
+            if (typeof storedNote === "string") {
+                textarea.value = storedNote;
+                textarea.dispatchEvent(new Event("input", { bubbles: true }));
+            }
 
             let timer;
             textarea.addEventListener(
@@ -321,11 +365,13 @@ function overrideDiscordTooltips() {
                 () => {
                     clearTimeout(timer);
                     timer = setTimeout(() => {
-                        chrome.runtime.sendMessage({
-                            cmd: "set",
-                            id: userId,
-                            text: textarea.value,
-                        });
+                        if (EXT.has) {
+                            EXT.sendMessage({
+                                cmd: "set",
+                                id: userId,
+                                text: textarea.value,
+                            });
+                        }
                         log("Saved local edit for user:", userId, "→", textarea.value);
                     }, 400);
                 },
@@ -340,7 +386,12 @@ function overrideDiscordTooltips() {
 // === Heartbeat
 setInterval(() => {
     if (window.location.hostname.includes("discord.com")) {
-        const manifest = chrome.runtime.getManifest();
-        log(`Extension active on Discord web (v${manifest.version})`);
+        const manifest = typeof EXT !== "undefined" && EXT.getManifest ? EXT.getManifest() : null;
+        if (manifest?.version) {
+            log(`Extension active on Discord web (v${manifest.version})`);
+        } else {
+            // Avoid crashing if not running as an extension context
+            log("Extension active on Discord web (manifest unavailable)");
+        }
     }
 }, 5000);
